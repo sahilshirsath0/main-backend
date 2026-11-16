@@ -29,7 +29,7 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:5173",
-            "https://YOUR-FRONTEND.vercel.app"
+            "https://agri-frontend-tau.vercel.app"
         ]
     }
 })
