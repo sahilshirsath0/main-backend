@@ -286,14 +286,14 @@ app.register_blueprint(users_routes)
 app.register_blueprint(shop_bp, url_prefix="/api")
 app.register_blueprint(shops_bp, url_prefix="/shop")
 
-app.config["JWT_SECRET_KEY"] = "f90219bf3d19946da006dcfd21873ebc7ebec3015a829de6d63658286b639008"
+app.config["JWT_SECRET_KEY"] = ""
 
 # Email Setup (SMTP Gmail Configuration)
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = "gslv3126@gmail.com"
-app.config["MAIL_PASSWORD"] = "doum jrkn tmdw hwty"
+app.config["MAIL_USERNAME"] = ""
+app.config["MAIL_PASSWORD"] = ""
 
 # Initialize extensions
 bcrypt = Bcrypt(app)
