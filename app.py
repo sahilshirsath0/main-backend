@@ -26,7 +26,12 @@ from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
 CORS(app, resources={
-    r"/*": {"origins": ["http://localhost:5173"]}
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "https://YOUR-FRONTEND.vercel.app"
+        ]
+    }
 })
 app.config.from_object(DevelopmentConfig)
 from shops_api import shops_bp
@@ -43,8 +48,10 @@ print("🚀 [SERVER STARTED] Flask App Running!")
 # ----------------------------------------------------------------------
 # 1️⃣ Add Product with Image Upload
 # ----------------------------------------------------------------------
-UPLOAD_FOLDER = "UploadImages"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure folder exists
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "UploadImages")
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Ensure folder exists
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 def allowed_file(filename):
@@ -67,8 +74,7 @@ def add_product():
         file_ext = image_file.filename.rsplit(".", 1)[1].lower()
         filename = f"{secure_filename(name)}.{file_ext}"
 
-        upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "UploadImages")
-        os.makedirs(upload_folder, exist_ok=True)
+        upload_folder = UPLOAD_FOLDER
 
         file_path = os.path.join(upload_folder, filename)
         image_file.save(file_path)
@@ -127,9 +133,8 @@ def get_all_products():
         for product in products:
             product["_id"] = str(product["_id"])
             product["image_url"] = (
-                f"/api/get_image/{product['filename']}"
-            )
-
+    f"{request.host_url.rstrip('/')}/api/get_image/{product['filename']}"
+)
         return jsonify(products), 200
 
     except Exception as e:
@@ -151,37 +156,27 @@ def get_image(filename):
         if not product:
             return jsonify({"error": "Image not found in MongoDB"}), 404
 
-        image_path = product.get("path")
+        stored_path = product.get("path")
 
-        if not image_path:
+        if not stored_path:
             return jsonify({"error": "Image path not found"}), 404
 
-        image_path = os.path.normpath(image_path)
+        # Handle Windows and Linux path separators
+        stored_path = str(stored_path).replace("\\", "/")
 
-        if not os.path.isabs(image_path):
-            image_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                image_path
-            )
+        # All product images are stored in UploadImages
+        image_filename = os.path.basename(stored_path)
+        image_path = os.path.join(UPLOAD_FOLDER, image_filename)
 
         if not os.path.isfile(image_path):
             return jsonify({
                 "error": "Image file not found on server",
-                "filename": filename
+                "filename": filename,
+                "stored_path": stored_path,
+                "searched_path": image_path
             }), 404
 
-        extension = os.path.splitext(image_path)[1].lower()
-
-        mime_types = {
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".png": "image/png"
-        }
-
-        return send_file(
-            image_path,
-            mimetype=mime_types.get(extension, "application/octet-stream")
-        )
+        return send_file(image_path)
 
     except Exception:
         app.logger.exception("Error fetching image: %s", filename)
